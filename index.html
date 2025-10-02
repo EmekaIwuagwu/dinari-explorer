@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dinari Blockchain Explorer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #3b82f6;
+      --primary-dark: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --text-primary: #f1f5f9;
+      --text-secondary: #cbd5e1;
+      --text-muted: #94a3b8;
+      --border: #475569;
+      --gold: #fbbf24;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, var(--bg-primary) 0%, #1a2942 100%);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* Header */
+    header {
+      background: var(--bg-secondary);
+      border-bottom: 2px solid var(--gold);
+      padding: 20px 0;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      font-size: 36px;
+    }
+
+    .logo h1 {
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--gold) 0%, #fcd34d 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .search-bar {
+      display: flex;
+      gap: 10px;
+      flex: 1;
+      max-width: 600px;
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 12px 16px;
+      background: var(--bg-tertiary);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .btn {
+      padding: 12px 24px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+      font-size: 14px;
+    }
+
+    .btn:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: var(--bg-secondary);
+      padding: 24px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--gold);
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    }
+
+    .stat-label {
+      color: var(--text-muted);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    .stat-subtitle {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0;
+    }
+
+    .tab {
+      padding: 12px 24px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+    }
+
+    .tab:hover {
+      color: var(--text-primary);
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .tab.active {
+      color: var(--gold);
+      border-bottom-color: var(--gold);
+    }
+
+    /* Content Sections */
+    .content-section {
+      display: none;
+    }
+
+    .content-section.active {
+      display: block;
+      animation: fadeIn 0.3s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+      transition: all 0.3s;
+    }
+
+    .card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .badge {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-success {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--success);
+    }
+
+    .badge-warning {
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--warning);
+    }
+
+    /* Info Grid */
+    .info-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+    }
+
+    .info-label {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .info-value {
+      color: var(--text-primary);
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+    }
+
+    .hash {
+      color: var(--primary);
+      word-break: break-all;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .hash:hover {
+      color: var(--gold);
+      text-decoration: underline;
+    }
+
+    /* Table */
+    .table-container {
+      overflow-x: auto;
+      margin-top: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: var(--bg-tertiary);
+    }
+
+    th {
+      padding: 16px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tr:hover {
+      background: var(--bg-tertiary);
+      cursor: pointer;
+    }
+
+    /* Pagination */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .page-btn {
+      padding: 8px 16px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .page-btn:hover:not(:disabled) {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .page-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .page-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-muted);
+    }
+
+    .spinner {
+      border: 3px solid var(--border);
+      border-top: 3px solid var(--primary);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Error */
+    .error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      padding: 16px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+      }
+
+      .search-bar {
+        width: 100%;
+        max-width: none;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .tabs {
+        overflow-x: auto;
+      }
+
+      .info-row {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      table {
+        font-size: 14px;
+      }
+
+      th, td {
+        padding: 12px 8px;
+      }
+    }
+
+    .token-badge {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .token-dnt {
+      background: rgba(59, 130, 246, 0.2);
+      color: var(--primary);
+    }
+
+    .token-afc {
+      background: rgba(251, 191, 36, 0.2);
+      color: var(--gold);
+    }
+
+    .tx-type {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .tx-icon {
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <div class="header-content">
+        <div class="logo">
+          <span class="logo-icon">⚡</span>
+          <h1>Dinari Explorer</h1>
+        </div>
+        <div class="search-bar">
+          <input 
+            type="text" 
+            class="search-input" 
+            id="searchInput"
+            placeholder="Search by Block #, Block Hash, Tx Hash, or Address..."
+          >
+          <button class="btn" onclick="performSearch()">Search</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Block Height</div>
+        <div class="stat-value" id="blockHeight">-</div>
+        <div class="stat-subtitle">Latest Block</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Network Status</div>
+        <div class="stat-value" style="font-size: 20px;" id="networkStatus">Checking...</div>
+        <div class="stat-subtitle">Blockchain Node</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Latest Block</div>
+        <div class="stat-value" style="font-size: 16px;" id="latestBlockHash">-</div>
+        <div class="stat-subtitle">Block Hash</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Auto Refresh</div>
+        <div class="stat-value" style="font-size: 20px;">
+          <span id="refreshStatus">ON</span>
+        </div>
+        <div class="stat-subtitle">Updates every 10s</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('blocks')">Latest Blocks</button>
+      <button class="tab" onclick="switchTab('block-detail')">Block Detail</button>
+      <button class="tab" onclick="switchTab('transaction')">Transaction</button>
+      <button class="tab" onclick="switchTab('address')">Address</button>
+    </div>
+
+    <!-- Blocks Section -->
+    <div id="blocks-section" class="content-section active">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Latest Blocks</h2>
+          <button class="btn" onclick="loadBlocks()">Refresh</button>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Height</th>
+                <th>Hash</th>
+                <th>Timestamp</th>
+                <th>Transactions</th>
+                <th>Miner</th>
+              </tr>
+            </thead>
+            <tbody id="blocksTable">
+              <tr><td colspan="5" class="loading"><div class="spinner"></div>Loading blocks...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="blocksPagination"></div>
+      </div>
+    </div>
+
+    <!-- Block Detail Section -->
+    <div id="block-detail-section" class="content-section">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Block Details</h2>
+        </div>
+        <div id="blockDetailContent">
+          <p class="loading">Enter a block number or hash to view details</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transaction Section -->
+    <div id="transaction-section" class="content-section">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Transaction Details</h2>
+        </div>
+        <div id="transactionContent">
+          <p class="loading">Enter a transaction hash to view details</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Address Section -->
+    <div id="address-section" class="content-section">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Address Information</h2>
+        </div>
+        <div id="addressContent">
+          <p class="loading">Enter an address to view balance and transactions</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration
+    const RPC_ENDPOINT = 'http://localhost:8545';
+    let currentPage = 1;
+    const blocksPerPage = 10;
+    let autoRefreshInterval = null;
+
+    // RPC Request Function
+    async function rpcRequest(method, params = {}) {
+      try {
+        const response = await fetch(RPC_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            method: method,
+            params: params,
+            id: Date.now()
+          })
+        });
+
+        const data = await response.json();
+        
+        if (data.error) {
+          throw new Error(data.error.message || 'RPC Error');
+        }
+
+        return data.result;
+      } catch (error) {
+        console.error('RPC Error:', error);
+        throw error;
+      }
+    }
+
+    // Initialize
+    async function init() {
+      await updateStats();
+      await loadBlocks();
+      startAutoRefresh();
+    }
+
+    // Update Stats
+    async function updateStats() {
+      try {
+        const tipData = await rpcRequest('chain_getHeight');
+        
+        // Extract height from the response object
+        const height = tipData.height;
+        document.getElementById('blockHeight').textContent = height.toLocaleString();
+        
+        // Use hash from tip data
+        const shortHash = tipData.hash.substring(0, 16) + '...';
+        document.getElementById('latestBlockHash').textContent = shortHash;
+        
+        document.getElementById('networkStatus').innerHTML = '<span style="color: var(--success);">● Online</span>';
+      } catch (error) {
+        document.getElementById('networkStatus').innerHTML = '<span style="color: var(--danger);">● Offline</span>';
+        console.error('Stats update failed:', error);
+      }
+    }
+
+    // Load Blocks
+    async function loadBlocks() {
+      try {
+        const tipData = await rpcRequest('chain_getHeight');
+        const height = tipData.height; // Extract height from object
+        
+        const startBlock = Math.max(1, height - (currentPage - 1) * blocksPerPage);
+        const endBlock = Math.max(1, startBlock - blocksPerPage + 1);
+
+        const blocks = [];
+        for (let i = startBlock; i >= endBlock && i >= 1; i--) {
+          const block = await rpcRequest('chain_getBlock', { blockHeight: i });
+          blocks.push(block);
+        }
+
+        displayBlocks(blocks);
+        updatePagination(height);
+      } catch (error) {
+        document.getElementById('blocksTable').innerHTML = `
+          <tr><td colspan="5" class="error">Failed to load blocks: ${error.message}</td></tr>
+        `;
+      }
+    }
+
+    // Display Blocks
+    function displayBlocks(blocks) {
+      const tbody = document.getElementById('blocksTable');
+      
+      if (blocks.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="loading">No blocks found</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = blocks.map(block => `
+        <tr onclick="viewBlock(${block.header.number})">
+          <td><strong style="color: var(--gold);">#${block.header.number.toLocaleString()}</strong></td>
+          <td><span class="hash">${block.hash.substring(0, 20)}...</span></td>
+          <td>${new Date(block.header.timestamp * 1000).toLocaleString()}</td>
+          <td><span class="badge badge-success">${block.transactions.length} txs</span></td>
+          <td><span class="hash">${block.header.miner.substring(0, 12)}...</span></td>
+        </tr>
+      `).join('');
+    }
+
+    // Update Pagination
+    function updatePagination(totalBlocks) {
+      const totalPages = Math.ceil(totalBlocks / blocksPerPage);
+      const pagination = document.getElementById('blocksPagination');
+
+      pagination.innerHTML = `
+        <button class="page-btn" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
+        <button class="page-btn active">${currentPage}</button>
+        <button class="page-btn" onclick="changePage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>Next</button>
+      `;
+    }
+
+    // Change Page
+    function changePage(page) {
+      currentPage = page;
+      loadBlocks();
+    }
+
+    // View Block
+    async function viewBlock(height) {
+      switchTab('block-detail');
+      document.getElementById('blockDetailContent').innerHTML = '<div class="loading"><div class="spinner"></div>Loading block...</div>';
+
+      try {
+        const block = await rpcRequest('chain_getBlock', { blockHeight: height });
+        displayBlockDetail(block);
+      } catch (error) {
+        document.getElementById('blockDetailContent').innerHTML = `<div class="error">Failed to load block: ${error.message}</div>`;
+      }
+    }
+
+    // Display Block Detail
+    function displayBlockDetail(block) {
+      const content = document.getElementById('blockDetailContent');
+      
+      content.innerHTML = `
+        <div class="info-grid">
+          <div class="info-row">
+            <span class="info-label">Block Height</span>
+            <span class="info-value">#${block.header.number.toLocaleString()}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Block Hash</span>
+            <span class="info-value hash">${block.hash}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Previous Hash</span>
+            <span class="info-value hash">${block.header.parentHash}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Timestamp</span>
+            <span class="info-value">${new Date(block.header.timestamp * 1000).toLocaleString()}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Miner</span>
+            <span class="info-value hash" onclick="viewAddress('${block.header.miner}')">${block.header.miner}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Difficulty</span>
+            <span class="info-value">${parseInt(block.header.difficulty).toLocaleString()}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Nonce</span>
+            <span class="info-value">${block.header.nonce.toLocaleString()}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Transactions</span>
+            <span class="info-value">${block.transactions.length}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Confirmations</span>
+            <span class="info-value">${block.confirmations || 'N/A'}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Merkle Root</span>
+            <span class="info-value hash">${block.header.merkleRoot}</span>
+          </div>
+        </div>
+
+        <h3 style="margin-top: 24px; margin-bottom: 16px; color: var(--text-primary);">Transactions</h3>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Hash</th>
+                <th>Type</th>
+                <th>From</th>
+                <th>To</th>
+                <th>Amount</th>
+                <th>Fee</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${block.transactions.map(tx => `
+                <tr onclick="viewTransaction('${tx.hash}')">
+                  <td><span class="hash">${tx.hash.substring(0, 16)}...</span></td>
+                  <td><span class="token-badge token-${tx.tokenType.toLowerCase()}">${tx.tokenType}</span></td>
+                  <td><span class="hash">${tx.from === 'coinbase' ? '⛏ Coinbase' : tx.from.substring(0, 12) + '...'}</span></td>
+                  <td><span class="hash">${tx.to.substring(0, 12)}...</span></td>
+                  <td>${(parseInt(tx.amount) / 100000000).toFixed(2)}</td>
+                  <td>${(parseInt(tx.fee) / 100000000).toFixed(8)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    // View Transaction
+    async function viewTransaction(hash) {
+      switchTab('transaction');
+      document.getElementById('transactionContent').innerHTML = '<div class="loading"><div class="spinner"></div>Loading transaction...</div>';
+
+      try {
+        const result = await rpcRequest('tx_get', { txHash: hash });
+        displayTransaction(result);
+      } catch (error) {
+        document.getElementById('transactionContent').innerHTML = `<div class="error">Failed to load transaction: ${error.message}</div>`;
+      }
+    }
+
+    // Display Transaction
+    function displayTransaction(result) {
+      const tx = result.transaction;
+      const receipt = result.receipt;
+      
+      const content = document.getElementById('transactionContent');
+      
+      content.innerHTML = `
+        <div class="card-header">
+          <span class="badge badge-success">${receipt.status}</span>
+        </div>
+        <div class="info-grid">
+          <div class="info-row">
+            <span class="info-label">Transaction Hash</span>
+            <span class="info-value hash">${tx.hash}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Block Number</span>
+            <span class="info-value hash" onclick="viewBlock(${receipt.blockNumber})">#${receipt.blockNumber.toLocaleString()}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Block Hash</span>
+            <span class="info-value hash">${receipt.blockHash}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">From</span>
+            <span class="info-value hash" onclick="viewAddress('${tx.from}')">${tx.from}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">To</span>
+            <span class="info-value hash" onclick="viewAddress('${tx.to}')">${tx.to}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Token Type</span>
+            <span class="info-value"><span class="token-badge token-${tx.tokenType.toLowerCase()}">${tx.tokenType}</span></span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Amount</span>
+            <span class="info-value">${(tx.amount / 100000000).toFixed(2)} ${tx.tokenType}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Fee</span>
+            <span class="info-value">${(tx.fee / 100000000).toFixed(8)} DNT</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Nonce</span>
+            <span class="info-value">${tx.nonce}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Timestamp</span>
+            <span class="info-value">${new Date(tx.timestamp * 1000).toLocaleString()}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    // View Address
+    async function viewAddress(address) {
+      switchTab('address');
+      document.getElementById('addressContent').innerHTML = '<div class="loading"><div class="spinner"></div>Loading address...</div>';
+
+      try {
+        const balance = await rpcRequest('account_getBalance', { address });
+        const txData = await rpcRequest('tx_list_by_wallet', { address, page: 1, pageSize: 20 });
+        
+        displayAddress(address, balance, txData);
+      } catch (error) {
+        document.getElementById('addressContent').innerHTML = `<div class="error">Failed to load address: ${error.message}</div>`;
+      }
+    }
+
+    // Display Address
+    function displayAddress(address, balance, txData) {
+      const content = document.getElementById('addressContent');
+      
+      content.innerHTML = `
+        <div class="info-grid">
+          <div class="info-row">
+            <span class="info-label">Address</span>
+            <span class="info-value hash">${address}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">DNT Balance</span>
+            <span class="info-value">${(balance.balanceDNT / 100000000).toFixed(2)} DNT</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">AFC Balance</span>
+            <span class="info-value">${(balance.balanceAFC / 100000000).toFixed(2)} AFC</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Nonce</span>
+            <span class="info-value">${balance.nonce}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Total Transactions</span>
+            <span class="info-value">${txData.total}</span>
+          </div>
+        </div>
+
+        <h3 style="margin-top: 24px; margin-bottom: 16px; color: var(--text-primary);">Transaction History</h3>
+        ${txData.transactions.length === 0 ? '<p class="loading">No transactions found</p>' : `
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Hash</th>
+                  <th>Type</th>
+                  <th>Direction</th>
+                  <th>Address</th>
+                  <th>Amount</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${txData.transactions.map(tx => {
+                  const isReceived = tx.to.toLowerCase() === address.toLowerCase();
+                  return `
+                    <tr onclick="viewTransaction('${tx.hash}')">
+                      <td><span class="hash">${tx.hash.substring(0, 16)}...</span></td>
+                      <td><span class="token-badge token-${tx.tokenType.toLowerCase()}">${tx.tokenType}</span></td>
+                      <td><span class="tx-type ${isReceived ? 'badge-success' : 'badge-warning'}">
+                        <span class="tx-icon">${isReceived ? '↙' : '↗'}</span>
+                        ${isReceived ? 'IN' : 'OUT'}
+                      </span></td>
+                      <td><span class="hash">${(isReceived ? tx.from : tx.to).substring(0, 12)}...</span></td>
+                      <td>${isReceived ? '+' : '-'}${(tx.amount / 100000000).toFixed(2)}</td>
+                      <td>${new Date(tx.timestamp * 1000).toLocaleString()}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        `}
+      `;
+    }
+
+    // Search
+    async function performSearch() {
+      const query = document.getElementById('searchInput').value.trim();
+      
+      if (!query) {
+        alert('Please enter a search query');
+        return;
+      }
+
+      // Check if it's a block number
+      if (/^\d+$/.test(query)) {
+        viewBlock(parseInt(query));
+        return;
+      }
+
+      // Check if it's a hash (0x prefix or hex string)
+      if (query.startsWith('0x') || /^[a-fA-F0-9]{16,64}$/.test(query)) {
+        // Try as transaction hash first
+        try {
+          await viewTransaction(query.startsWith('0x') ? query : '0x' + query);
+          return;
+        } catch (e) {
+          // If not a transaction, might be a block hash
+          alert('Block hash search not implemented. Use block number instead.');
+        }
+        return;
+      }
+
+      // Check if it's an address (starts with D)
+      if (query.startsWith('D') && query.length === 34) {
+        viewAddress(query);
+        return;
+      }
+
+      alert('Invalid search query. Enter a block number, transaction hash, or address.');
+    }
+
+    // Allow Enter key to search
+    document.getElementById('searchInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        performSearch();
+      }
+    });
+
+    // Switch Tab
+    function switchTab(tabName) {
+      // Update tab buttons
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      event.target.classList.add('active');
+
+      // Update content sections
+      document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
+      document.getElementById(`${tabName}-section`).classList.add('active');
+    }
+
+    // Auto Refresh
+    function startAutoRefresh() {
+      autoRefreshInterval = setInterval(() => {
+        updateStats();
+        if (document.getElementById('blocks-section').classList.contains('active')) {
+          loadBlocks();
+        }
+      }, 10000);
+    }
+
+    function toggleAutoRefresh() {
+      if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+        document.getElementById('refreshStatus').textContent = 'OFF';
+      } else {
+        startAutoRefresh();
+        document.getElementById('refreshStatus').textContent = 'ON';
+      }
+    }
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
