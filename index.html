@@ -586,9 +586,10 @@
     </div>
   </div>
 
-  <script>
+<script>
     // Configuration
-    const RPC_ENDPOINT = 'https://rpctiger-testnet.dinariblockchain.network';
+    const RPC_ENDPOINT = 'http://52.241.1.239:8545';
+
     let currentPage = 1;
     const blocksPerPage = 10;
     let autoRefreshInterval = null;
@@ -630,15 +631,20 @@
     // Update Stats
     async function updateStats() {
       try {
-        const tipData = await rpcRequest('chain_getHeight');
+        const heightData = await rpcRequest('chain_getHeight');
         
         // Extract height from the response object
-        const height = tipData.height;
+        const height = heightData.height || 0;
         document.getElementById('blockHeight').textContent = height.toLocaleString();
         
-        // Use hash from tip data
-        const shortHash = tipData.hash.substring(0, 16) + '...';
-        document.getElementById('latestBlockHash').textContent = shortHash;
+        // Get the actual block to show hash
+        try {
+          const block = await rpcRequest('chain_getBlock', { height: height });
+          const shortHash = block.hash ? block.hash.substring(0, 16) + '...' : '0x0...';
+          document.getElementById('latestBlockHash').textContent = shortHash;
+        } catch (e) {
+          document.getElementById('latestBlockHash').textContent = '0x0...';
+        }
         
         document.getElementById('networkStatus').innerHTML = '<span style="color: var(--success);">● Online</span>';
       } catch (error) {
@@ -650,16 +656,27 @@
     // Load Blocks
     async function loadBlocks() {
       try {
-        const tipData = await rpcRequest('chain_getHeight');
-        const height = tipData.height; // Extract height from object
+        const heightData = await rpcRequest('chain_getHeight');
+        const height = heightData.height || 0;
         
-        const startBlock = Math.max(1, height - (currentPage - 1) * blocksPerPage);
-        const endBlock = Math.max(1, startBlock - blocksPerPage + 1);
+        if (height === 0) {
+          document.getElementById('blocksTable').innerHTML = `
+            <tr><td colspan="5" class="loading">Only genesis block exists. Start mining to create more blocks.</td></tr>
+          `;
+          return;
+        }
+        
+        const startBlock = Math.max(0, height - (currentPage - 1) * blocksPerPage);
+        const endBlock = Math.max(0, startBlock - blocksPerPage + 1);
 
         const blocks = [];
-        for (let i = startBlock; i >= endBlock && i >= 1; i--) {
-          const block = await rpcRequest('chain_getBlock', { blockHeight: i });
-          blocks.push(block);
+        for (let i = startBlock; i >= endBlock && i >= 0; i--) {
+          try {
+            const block = await rpcRequest('chain_getBlock', { height: i });
+            blocks.push(block);
+          } catch (e) {
+            console.error(`Failed to load block ${i}:`, e);
+          }
         }
 
         displayBlocks(blocks);
@@ -681,19 +698,19 @@
       }
 
       tbody.innerHTML = blocks.map(block => `
-        <tr onclick="viewBlock(${block.header.number})">
-          <td><strong style="color: var(--gold);">#${block.header.number.toLocaleString()}</strong></td>
+        <tr onclick="viewBlock(${block.height})">
+          <td><strong style="color: var(--gold);">#${block.height.toLocaleString()}</strong></td>
           <td><span class="hash">${block.hash.substring(0, 20)}...</span></td>
-          <td>${new Date(block.header.timestamp * 1000).toLocaleString()}</td>
-          <td><span class="badge badge-success">${block.transactions.length} txs</span></td>
-          <td><span class="hash">${block.header.miner.substring(0, 12)}...</span></td>
+          <td>${new Date(block.timestamp * 1000).toLocaleString()}</td>
+          <td><span class="badge badge-success">${block.txCount || 0} txs</span></td>
+          <td><span class="hash">${block.miner ? block.miner.substring(0, 12) + '...' : 'N/A'}</span></td>
         </tr>
       `).join('');
     }
 
     // Update Pagination
     function updatePagination(totalBlocks) {
-      const totalPages = Math.ceil(totalBlocks / blocksPerPage);
+      const totalPages = Math.ceil((totalBlocks + 1) / blocksPerPage);
       const pagination = document.getElementById('blocksPagination');
 
       pagination.innerHTML = `
@@ -715,7 +732,7 @@
       document.getElementById('blockDetailContent').innerHTML = '<div class="loading"><div class="spinner"></div>Loading block...</div>';
 
       try {
-        const block = await rpcRequest('chain_getBlock', { blockHeight: height });
+        const block = await rpcRequest('chain_getBlock', { height: height });
         displayBlockDetail(block);
       } catch (error) {
         document.getElementById('blockDetailContent').innerHTML = `<div class="error">Failed to load block: ${error.message}</div>`;
@@ -730,7 +747,7 @@
         <div class="info-grid">
           <div class="info-row">
             <span class="info-label">Block Height</span>
-            <span class="info-value">#${block.header.number.toLocaleString()}</span>
+            <span class="info-value">#${block.height.toLocaleString()}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Block Hash</span>
@@ -738,65 +755,67 @@
           </div>
           <div class="info-row">
             <span class="info-label">Previous Hash</span>
-            <span class="info-value hash">${block.header.parentHash}</span>
+            <span class="info-value hash">${block.prevHash}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Timestamp</span>
-            <span class="info-value">${new Date(block.header.timestamp * 1000).toLocaleString()}</span>
+            <span class="info-value">${new Date(block.timestamp * 1000).toLocaleString()}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Miner</span>
-            <span class="info-value hash" onclick="viewAddress('${block.header.miner}')">${block.header.miner}</span>
+            <span class="info-value hash" onclick="viewAddress('${block.miner || 'N/A'}')">${block.miner || 'N/A'}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Difficulty</span>
-            <span class="info-value">${parseInt(block.header.difficulty).toLocaleString()}</span>
+            <span class="info-value">${parseInt(block.difficulty).toLocaleString()}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Nonce</span>
-            <span class="info-value">${block.header.nonce.toLocaleString()}</span>
+            <span class="info-value">${block.nonce.toLocaleString()}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Transactions</span>
-            <span class="info-value">${block.transactions.length}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Confirmations</span>
-            <span class="info-value">${block.confirmations || 'N/A'}</span>
+            <span class="info-value">${block.txCount || 0}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Merkle Root</span>
-            <span class="info-value hash">${block.header.merkleRoot}</span>
+            <span class="info-value hash">${block.merkleRoot}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">State Root</span>
+            <span class="info-value hash">${block.stateRoot}</span>
           </div>
         </div>
 
         <h3 style="margin-top: 24px; margin-bottom: 16px; color: var(--text-primary);">Transactions</h3>
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Hash</th>
-                <th>Type</th>
-                <th>From</th>
-                <th>To</th>
-                <th>Amount</th>
-                <th>Fee</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${block.transactions.map(tx => `
-                <tr onclick="viewTransaction('${tx.hash}')">
-                  <td><span class="hash">${tx.hash.substring(0, 16)}...</span></td>
-                  <td><span class="token-badge token-${tx.tokenType.toLowerCase()}">${tx.tokenType}</span></td>
-                  <td><span class="hash">${tx.from === 'coinbase' ? '⛏ Coinbase' : tx.from.substring(0, 12) + '...'}</span></td>
-                  <td><span class="hash">${tx.to.substring(0, 12)}...</span></td>
-                  <td>${(parseInt(tx.amount) / 100000000).toFixed(2)}</td>
-                  <td>${(parseInt(tx.fee) / 100000000).toFixed(8)}</td>
+        ${!block.transactions || block.transactions.length === 0 ? '<p class="loading">No transactions in this block</p>' : `
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Hash</th>
+                  <th>Type</th>
+                  <th>From</th>
+                  <th>To</th>
+                  <th>Amount</th>
+                  <th>Fee</th>
                 </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                ${block.transactions.map(tx => `
+                  <tr onclick="viewTransaction('${tx.hash}')">
+                    <td><span class="hash">${tx.hash.substring(0, 16)}...</span></td>
+                    <td><span class="token-badge token-${tx.tokenType.toLowerCase()}">${tx.tokenType}</span></td>
+                    <td><span class="hash">${tx.from === 'coinbase' ? '⛏ Coinbase' : tx.from.substring(0, 12) + '...'}</span></td>
+                    <td><span class="hash">${tx.to.substring(0, 12)}...</span></td>
+                    <td>${tx.amount}</td>
+                    <td>${tx.fee}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `}
       `;
     }
 
@@ -806,36 +825,22 @@
       document.getElementById('transactionContent').innerHTML = '<div class="loading"><div class="spinner"></div>Loading transaction...</div>';
 
       try {
-        const result = await rpcRequest('tx_get', { txHash: hash });
-        displayTransaction(result);
+        const tx = await rpcRequest('tx_get', { txHash: hash });
+        displayTransaction(tx);
       } catch (error) {
         document.getElementById('transactionContent').innerHTML = `<div class="error">Failed to load transaction: ${error.message}</div>`;
       }
     }
 
     // Display Transaction
-    function displayTransaction(result) {
-      const tx = result.transaction;
-      const receipt = result.receipt;
-      
+    function displayTransaction(tx) {
       const content = document.getElementById('transactionContent');
       
       content.innerHTML = `
-        <div class="card-header">
-          <span class="badge badge-success">${receipt.status}</span>
-        </div>
         <div class="info-grid">
           <div class="info-row">
             <span class="info-label">Transaction Hash</span>
             <span class="info-value hash">${tx.hash}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Block Number</span>
-            <span class="info-value hash" onclick="viewBlock(${receipt.blockNumber})">#${receipt.blockNumber.toLocaleString()}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Block Hash</span>
-            <span class="info-value hash">${receipt.blockHash}</span>
           </div>
           <div class="info-row">
             <span class="info-label">From</span>
@@ -851,11 +856,11 @@
           </div>
           <div class="info-row">
             <span class="info-label">Amount</span>
-            <span class="info-value">${(tx.amount / 100000000).toFixed(2)} ${tx.tokenType}</span>
+            <span class="info-value">${tx.amount} ${tx.tokenType}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Fee</span>
-            <span class="info-value">${(tx.fee / 100000000).toFixed(8)} DNT</span>
+            <span class="info-value">${tx.fee} DNT</span>
           </div>
           <div class="info-row">
             <span class="info-label">Nonce</span>
@@ -875,8 +880,8 @@
       document.getElementById('addressContent').innerHTML = '<div class="loading"><div class="spinner"></div>Loading address...</div>';
 
       try {
-        const balance = await rpcRequest('account_getBalance', { address });
-        const txData = await rpcRequest('tx_list_by_wallet', { address, page: 1, pageSize: 20 });
+        const balance = await rpcRequest('wallet_balance', { address });
+        const txData = await rpcRequest('tx_listByWallet', { address, limit: 20 });
         
         displayAddress(address, balance, txData);
       } catch (error) {
@@ -896,11 +901,11 @@
           </div>
           <div class="info-row">
             <span class="info-label">DNT Balance</span>
-            <span class="info-value">${(balance.balanceDNT / 100000000).toFixed(2)} DNT</span>
+            <span class="info-value">${balance.balanceDNT} DNT</span>
           </div>
           <div class="info-row">
             <span class="info-label">AFC Balance</span>
-            <span class="info-value">${(balance.balanceAFC / 100000000).toFixed(2)} AFC</span>
+            <span class="info-value">${balance.balanceAFC} AFC</span>
           </div>
           <div class="info-row">
             <span class="info-label">Nonce</span>
@@ -908,12 +913,12 @@
           </div>
           <div class="info-row">
             <span class="info-label">Total Transactions</span>
-            <span class="info-value">${txData.total}</span>
+            <span class="info-value">${txData.total || 0}</span>
           </div>
         </div>
 
         <h3 style="margin-top: 24px; margin-bottom: 16px; color: var(--text-primary);">Transaction History</h3>
-        ${txData.transactions.length === 0 ? '<p class="loading">No transactions found</p>' : `
+        ${!txData.transactions || txData.transactions.length === 0 ? '<p class="loading">No transactions found</p>' : `
           <div class="table-container">
             <table>
               <thead>
@@ -933,12 +938,11 @@
                     <tr onclick="viewTransaction('${tx.hash}')">
                       <td><span class="hash">${tx.hash.substring(0, 16)}...</span></td>
                       <td><span class="token-badge token-${tx.tokenType.toLowerCase()}">${tx.tokenType}</span></td>
-                      <td><span class="tx-type ${isReceived ? 'badge-success' : 'badge-warning'}">
-                        <span class="tx-icon">${isReceived ? '↙' : '↗'}</span>
-                        ${isReceived ? 'IN' : 'OUT'}
+                      <td><span class="badge ${isReceived ? 'badge-success' : 'badge-warning'}">
+                        ${isReceived ? '↙ IN' : '↗ OUT'}
                       </span></td>
                       <td><span class="hash">${(isReceived ? tx.from : tx.to).substring(0, 12)}...</span></td>
-                      <td>${isReceived ? '+' : '-'}${(tx.amount / 100000000).toFixed(2)}</td>
+                      <td>${isReceived ? '+' : '-'}${tx.amount}</td>
                       <td>${new Date(tx.timestamp * 1000).toLocaleString()}</td>
                     </tr>
                   `;
@@ -972,14 +976,13 @@
           await viewTransaction(query.startsWith('0x') ? query : '0x' + query);
           return;
         } catch (e) {
-          // If not a transaction, might be a block hash
-          alert('Block hash search not implemented. Use block number instead.');
+          alert('Transaction not found');
         }
         return;
       }
 
       // Check if it's an address (starts with D)
-      if (query.startsWith('D') && query.length === 34) {
+      if (query.startsWith('D') && query.length > 20) {
         viewAddress(query);
         return;
       }
@@ -998,7 +1001,14 @@
     function switchTab(tabName) {
       // Update tab buttons
       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-      event.target.classList.add('active');
+      
+      // Find and activate the clicked tab
+      const tabs = document.querySelectorAll('.tab');
+      const tabNames = ['blocks', 'block-detail', 'transaction', 'address'];
+      const index = tabNames.indexOf(tabName);
+      if (index >= 0 && tabs[index]) {
+        tabs[index].classList.add('active');
+      }
 
       // Update content sections
       document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
