@@ -471,7 +471,7 @@
     <div class="container">
       <div class="header-content">
         <div class="logo">
-          <span class="logo-icon">⚡</span>
+          <span class="logo-icon">âš¡</span>
           <h1>Dinari Explorer</h1>
         </div>
         <div class="search-bar">
@@ -588,7 +588,7 @@
 
 <script>
     // Configuration
-    const RPC_ENDPOINT = 'http://52.241.1.239:8545';
+    const RPC_ENDPOINT = 'https://52.241.1.239:8545';
 
     let currentPage = 1;
     const blocksPerPage = 10;
@@ -646,9 +646,9 @@
           document.getElementById('latestBlockHash').textContent = '0x0...';
         }
         
-        document.getElementById('networkStatus').innerHTML = '<span style="color: var(--success);">● Online</span>';
+        document.getElementById('networkStatus').innerHTML = '<span style="color: var(--success);">â— Online</span>';
       } catch (error) {
-        document.getElementById('networkStatus').innerHTML = '<span style="color: var(--danger);">● Offline</span>';
+        document.getElementById('networkStatus').innerHTML = '<span style="color: var(--danger);">â— Offline</span>';
         console.error('Stats update failed:', error);
       }
     }
@@ -806,7 +806,7 @@
                   <tr onclick="viewTransaction('${tx.hash}')">
                     <td><span class="hash">${tx.hash.substring(0, 16)}...</span></td>
                     <td><span class="token-badge token-${tx.tokenType.toLowerCase()}">${tx.tokenType}</span></td>
-                    <td><span class="hash">${tx.from === 'coinbase' ? '⛏ Coinbase' : tx.from.substring(0, 12) + '...'}</span></td>
+                    <td><span class="hash">${tx.from === 'coinbase' ? 'â› Coinbase' : tx.from.substring(0, 12) + '...'}</span></td>
                     <td><span class="hash">${tx.to.substring(0, 12)}...</span></td>
                     <td>${tx.amount}</td>
                     <td>${tx.fee}</td>
@@ -939,7 +939,7 @@
                       <td><span class="hash">${tx.hash.substring(0, 16)}...</span></td>
                       <td><span class="token-badge token-${tx.tokenType.toLowerCase()}">${tx.tokenType}</span></td>
                       <td><span class="badge ${isReceived ? 'badge-success' : 'badge-warning'}">
-                        ${isReceived ? '↙ IN' : '↗ OUT'}
+                        ${isReceived ? 'â†™ IN' : 'â†— OUT'}
                       </span></td>
                       <td><span class="hash">${(isReceived ? tx.from : tx.to).substring(0, 12)}...</span></td>
                       <td>${isReceived ? '+' : '-'}${tx.amount}</td>
