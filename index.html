@@ -65,7 +65,16 @@
     }
 
     .logo-icon {
-      font-size: 36px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-icon svg {
+      width: 100%;
+      height: 100%;
     }
 
     .logo h1 {
@@ -471,7 +480,28 @@
     <div class="container">
       <div class="header-content">
         <div class="logo">
-          <span class="logo-icon">âš¡</span>
+          <span class="logo-icon">
+            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="100" cy="100" r="95" fill="#1e293b" stroke="#fbbf24" stroke-width="2"/>
+              <path d="M110 40 L70 100 L90 100 L80 160 L130 90 L110 90 L120 40 Z"
+                    fill="url(#goldGradient)"
+                    stroke="#fcd34d"
+                    stroke-width="2"
+                    stroke-linejoin="round"/>
+              <path d="M110 40 L80 88 L90 88 L85 120"
+                    fill="none"
+                    stroke="#fef3c7"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    opacity="0.6"/>
+              <defs>
+                <linearGradient id="goldGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" style="stop-color:#fcd34d;stop-opacity:1" />
+                  <stop offset="100%" style="stop-color:#fbbf24;stop-opacity:1" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </span>
           <h1>Dinari Explorer</h1>
         </div>
         <div class="search-bar">
@@ -646,9 +676,9 @@
           document.getElementById('latestBlockHash').textContent = '0x0...';
         }
         
-        document.getElementById('networkStatus').innerHTML = '<span style="color: var(--success);">â— Online</span>';
+        document.getElementById('networkStatus').innerHTML = '<span style="display: inline-flex; align-items: center; gap: 8px;"><svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5" fill="#10b981"/></svg>Online</span>';
       } catch (error) {
-        document.getElementById('networkStatus').innerHTML = '<span style="color: var(--danger);">â— Offline</span>';
+        document.getElementById('networkStatus').innerHTML = '<span style="display: inline-flex; align-items: center; gap: 8px;"><svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5" fill="#ef4444"/></svg>Offline</span>';
         console.error('Stats update failed:', error);
       }
     }
@@ -806,7 +836,7 @@
                   <tr onclick="viewTransaction('${tx.hash}')">
                     <td><span class="hash">${tx.hash.substring(0, 16)}...</span></td>
                     <td><span class="token-badge token-${tx.tokenType.toLowerCase()}">${tx.tokenType}</span></td>
-                    <td><span class="hash">${tx.from === 'coinbase' ? 'â› Coinbase' : tx.from.substring(0, 12) + '...'}</span></td>
+                    <td><span class="hash">${tx.from === 'coinbase' ? '[COINBASE]' : tx.from.substring(0, 12) + '...'}</span></td>
                     <td><span class="hash">${tx.to.substring(0, 12)}...</span></td>
                     <td>${tx.amount}</td>
                     <td>${tx.fee}</td>
@@ -939,7 +969,7 @@
                       <td><span class="hash">${tx.hash.substring(0, 16)}...</span></td>
                       <td><span class="token-badge token-${tx.tokenType.toLowerCase()}">${tx.tokenType}</span></td>
                       <td><span class="badge ${isReceived ? 'badge-success' : 'badge-warning'}">
-                        ${isReceived ? 'â†™ IN' : 'â†— OUT'}
+                        ${isReceived ? 'â–¼ IN' : 'â–² OUT'}
                       </span></td>
                       <td><span class="hash">${(isReceived ? tx.from : tx.to).substring(0, 12)}...</span></td>
                       <td>${isReceived ? '+' : '-'}${tx.amount}</td>
