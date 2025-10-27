@@ -618,7 +618,7 @@
 
 <script>
     // Configuration
-    const RPC_ENDPOINT = 'https://rpc.dinaritiger.xyz:8545';
+    const RPC_ENDPOINT = 'https://rpc.dinaritiger.xyz';
 
     let currentPage = 1;
     const blocksPerPage = 10;
@@ -647,10 +647,6 @@
         return data.result;
       } catch (error) {
         console.error('RPC Error:', error);
-        // Check if it's a network/certificate error
-        if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
-          showConnectionError();
-        }
         throw error;
       }
     }
@@ -698,6 +694,9 @@
     }
 
     // Initialize
+    let initRetryCount = 0;
+    const MAX_INIT_RETRIES = 3;
+
     async function init() {
       try {
         await updateStats();
@@ -705,7 +704,16 @@
         startAutoRefresh();
       } catch (error) {
         console.error('Initialization failed:', error);
-        // Error message already shown by showConnectionError() if it's a network issue
+        initRetryCount++;
+
+        // Only show error after multiple retries
+        if (initRetryCount >= MAX_INIT_RETRIES) {
+          showConnectionError();
+        } else {
+          // Retry after a delay
+          console.log(`Retrying initialization (${initRetryCount}/${MAX_INIT_RETRIES})...`);
+          setTimeout(init, 2000);
+        }
       }
     }
 
