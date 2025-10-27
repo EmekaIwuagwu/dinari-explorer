@@ -639,7 +639,7 @@
         });
 
         const data = await response.json();
-        
+
         if (data.error) {
           throw new Error(data.error.message || 'RPC Error');
         }
@@ -647,15 +647,66 @@
         return data.result;
       } catch (error) {
         console.error('RPC Error:', error);
+        // Check if it's a network/certificate error
+        if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
+          showConnectionError();
+        }
         throw error;
       }
     }
 
+    // Show connection error with browser-specific help
+    function showConnectionError() {
+      const errorHtml = `
+        <div style="max-width: 800px; margin: 50px auto; padding: 30px; background: var(--bg-secondary); border: 2px solid var(--danger); border-radius: 12px;">
+          <h2 style="color: var(--danger); margin-bottom: 20px;">⚠️ Connection Error</h2>
+          <p style="margin-bottom: 15px; font-size: 16px;">Unable to connect to the Dinari blockchain RPC endpoint.</p>
+
+          <div style="background: var(--bg-tertiary); padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <strong>RPC Endpoint:</strong> <code style="color: var(--gold);">${RPC_ENDPOINT}</code>
+          </div>
+
+          <h3 style="color: var(--warning); margin: 25px 0 15px 0;">🦊 Firefox Users</h3>
+          <p style="margin-bottom: 10px;">Firefox blocks connections to HTTPS endpoints with invalid SSL certificates. To fix this:</p>
+          <ol style="margin-left: 20px; line-height: 1.8;">
+            <li>Open <a href="${RPC_ENDPOINT}" target="_blank" style="color: var(--primary);">${RPC_ENDPOINT}</a> in a new tab</li>
+            <li>Click "Advanced" on the warning page</li>
+            <li>Click "Accept the Risk and Continue"</li>
+            <li>Return to this page and refresh</li>
+          </ol>
+
+          <h3 style="color: var(--warning); margin: 25px 0 15px 0;">🌐 Chrome Users</h3>
+          <p style="margin-bottom: 10px;">If you see this error in Chrome:</p>
+          <ol style="margin-left: 20px; line-height: 1.8;">
+            <li>Open <a href="${RPC_ENDPOINT}" target="_blank" style="color: var(--primary);">${RPC_ENDPOINT}</a> in a new tab</li>
+            <li>Click "Advanced" or "Proceed to ${RPC_ENDPOINT.replace('https://', '')} (unsafe)"</li>
+            <li>Return to this page and refresh</li>
+          </ol>
+
+          <div style="margin-top: 25px; padding: 15px; background: var(--bg-primary); border-left: 4px solid var(--primary); border-radius: 4px;">
+            <strong>Note:</strong> This error occurs because the RPC server uses a self-signed or invalid SSL certificate.
+            This is common in development environments but should be fixed in production.
+          </div>
+
+          <button onclick="location.reload()" style="margin-top: 25px; padding: 12px 24px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600;">
+            🔄 Retry Connection
+          </button>
+        </div>
+      `;
+
+      document.querySelector('.container').innerHTML = errorHtml;
+    }
+
     // Initialize
     async function init() {
-      await updateStats();
-      await loadBlocks();
-      startAutoRefresh();
+      try {
+        await updateStats();
+        await loadBlocks();
+        startAutoRefresh();
+      } catch (error) {
+        console.error('Initialization failed:', error);
+        // Error message already shown by showConnectionError() if it's a network issue
+      }
     }
 
     // Update Stats
